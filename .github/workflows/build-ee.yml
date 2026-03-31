@@ -1,0 +1,74 @@
+name: "Build Execution Environments"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      
+env:
+  IMAGE_REGISTRY: quay.io
+  QUAY_REPO: "quay.io/${{ secrets.QUAY_USERNAME }}/awx-networkee"
+  REGISTRY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+  REGISTRY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Install Ansible Builder"
+        run: |
+          pip install ansible-builder
+          
+      - name: "Authenticate to Red Hat Registry"
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: registry.redhat.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+          
+      - name: "Log in to Quay.io"
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: quay.io
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+          
+      - name: "Log in to Dockerhub"
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: dockerhub.io
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+
+      - name: "Build Execution Environment"
+        run: |
+          ansible-builder build \
+            --file="awx-network-ee.yml" \
+            --container-runtime podman \
+            --tag="${{ env.QUAY_REPO }}:${{ github.sha }}" \
+            --tag="${{ env.QUAY_REPO }}:latest" \
+            -v 3
+
+      - name: "Push to Quay"
+        if: github.event_name != 'pull_request' 
+        run: |
+          podman push ${{ env.QUAY_REPO }}:${{ github.sha }}
+          podman push ${{ env.QUAY_REPO }}:latest
+
+      - name: "Push to Dockerhub"
+        if: github.event_name != 'pull_request' 
+        run: |
+          podman push ${{ env.QUAY_REPO }}:${{ github.sha }}
+          podman push ${{ env.QUAY_REPO }}:latest
+          

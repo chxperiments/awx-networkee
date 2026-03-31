@@ -1,0 +1,12 @@
+podman
+python3-pip
+python-requests
+python-pyyaml
+libxml2-devel
+gcc
+python3-devel
+git
+iputils
+net-tools
+sshpass
+openssl
