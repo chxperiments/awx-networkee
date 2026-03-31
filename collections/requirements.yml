@@ -4,8 +4,5 @@ collections:
   - name: community.general
   - name: ansible.netcommon
   - name: ansible.posix
-  - name: ansible.scm
   - name: ansible.utils
   - name: cisco.ios
-  - name: fortinet.fortimanager
-  - name: fortinet.fortios
